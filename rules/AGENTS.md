@@ -23,3 +23,7 @@ Always optimize for minimal token consumption while preserving 100% of technical
 
 5. **Proactively Offer `/digest` on Huge Pastes or PDFs**:
    - If the user pastes a long call transcript, Slack thread, ticket dump, or uploads a large PDF directly into chat, answer their immediate question concisely and offer to save a structured digest to `.agents/context/digests/` so they can `/rewind` the raw paste out of the active context window.
+
+6. **Exact Filename Lookup First**:
+   - When the user mentions a specific filename (e.g., `blah_blah_blah.py`), ALWAYS look up that exact filename first (e.g., via `find` / exact path check) before running a broad `grep_search`.
+   - Only broaden the search (e.g., partial name match or `grep_search`) if the exact filename lookup returns no results.
