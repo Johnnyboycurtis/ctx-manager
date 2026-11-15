@@ -339,6 +339,59 @@ def fold_json_file(file_path: str) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# 5. SQLITE FTS5 DIGEST SEARCH & INDEXING
+# ---------------------------------------------------------------------------
+def search_context_db(query: str) -> int:
+    import ctx_db
+
+    results = ctx_db.search_digests(query, limit=5)
+    if not results:
+        print(f"No matches found in {ctx_db.get_db_path()} for: {query}")
+        return 0
+
+    print(f"=== [Context Saver: Search Results for '{query}'] ===")
+    for r in results:
+        path_info = f" ({r['file_path']})" if r.get("file_path") else ""
+        print(f"\n[{r['id']}] {r['title']} [{r['source_type']}]{path_info}")
+        print(f"    {r['snippet']}")
+    return 0
+
+
+def index_markdown_digest(file_path: str) -> int:
+    import ctx_db
+
+    if not os.path.isfile(file_path):
+        print(f"Error: File not found: {file_path}", file=sys.stderr)
+        return 1
+
+    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+        content = f.read()
+
+    title = os.path.basename(file_path)
+    for line in content.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
+
+    row_id = ctx_db.upsert_digest(
+        title=title,
+        content=content,
+        source_type="markdown",
+        file_path=os.path.abspath(file_path),
+    )
+    print(f"Indexed '{title}' (id={row_id}) into {ctx_db.get_db_path()}")
+    return 0
+
+
+def prune_db(days: int = 10) -> int:
+    import ctx_db
+
+    deleted = ctx_db.prune_command_logs(days=days)
+    print(f"Pruned {deleted} command_log row(s) older than {days} days from {ctx_db.get_db_path()}.")
+    return 0
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Antigravity Context Saver folding utility.")
     parser.add_argument("--ipynb", help="Path to Jupyter Notebook (.ipynb) to strip base64/HTML and fold tracebacks")
@@ -346,6 +399,10 @@ if __name__ == "__main__":
     parser.add_argument("--md", help="Path to Markdown/note file to extract Heading & Line-Range Map")
     parser.add_argument("--json", help="Path to large JSON file to extract schema & sample items")
     parser.add_argument("--cmd", help="Shell command to execute with traceback & test folding")
+    parser.add_argument("--search", help="Search indexed digests in SQLite FTS5")
+    parser.add_argument("--index-md", help="Index a Markdown digest or note into SQLite FTS5")
+    parser.add_argument("--prune", action="store_true", help="Prune command_log rows older than --days (default: 10) from SQLite DB")
+    parser.add_argument("--days", type=int, default=10, help="Retention window in days for --prune (default: 10)")
     args = parser.parse_args()
 
     if args.ipynb:
@@ -356,6 +413,12 @@ if __name__ == "__main__":
         sys.exit(fold_json_file(args.json))
     elif args.cmd:
         sys.exit(fold_command_output(args.cmd))
+    elif args.search:
+        sys.exit(search_context_db(args.search))
+    elif args.index_md:
+        sys.exit(index_markdown_digest(args.index_md))
+    elif args.prune:
+        sys.exit(prune_db(args.days))
     else:
         parser.print_help()
         sys.exit(1)
