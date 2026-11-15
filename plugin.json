@@ -1,0 +1,7 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "context-saver",
+  "displayName": "Context Saver",
+  "description": "Proactively folds tool outputs and file reads before entering context, with a /digest skill to distill large notes and PDFs.",
+  "version": "1.0.0"
+}

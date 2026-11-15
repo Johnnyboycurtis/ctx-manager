@@ -1,0 +1,15 @@
+{
+  "context-saver-gate": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command|view_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/pre_tool_gate.py"
+          }
+        ]
+      }
+    ]
+  }
+}
